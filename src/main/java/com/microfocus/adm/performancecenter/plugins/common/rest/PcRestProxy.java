@@ -18,6 +18,7 @@ package com.microfocus.adm.performancecenter.plugins.common.rest;
 
 import com.microfocus.adm.performancecenter.plugins.common.pcEntities.*;
 import com.microfocus.adm.performancecenter.plugins.common.utils.Base64Encoder;
+import com.microfocus.adm.performancecenter.plugins.common.utils.Helper;
 import org.apache.commons.codec.CharEncoding;
 import org.apache.commons.io.IOUtils;
 import org.apache.http.HttpHeaders;
@@ -90,12 +91,12 @@ public class PcRestProxy {
 	private DefaultHttpClient client;
     private HttpContext context;
     private CookieStore cookieStore;
-  //  private PrintStream logger;
+    private String tenantSuffix;
 
     public PcRestProxy(String webProtocolName, String pcServerName, String almDomain, String almProject, String proxyOutURL, String proxyUser, String proxyPassword) throws PcException {
-
-//        logger = mainLogger;
-    	pcServer = pcServerName;
+        String[] lreServerAndTenant = Helper.GetLreServerAndTenant(pcServerName);
+        pcServer = lreServerAndTenant[0];
+        tenantSuffix = lreServerAndTenant[1];
     	domain = almDomain;
     	project = almProject;
     	webProtocol = webProtocolName;
@@ -162,7 +163,7 @@ public class PcRestProxy {
     public boolean authenticate(String userName, String password) throws PcException, ClientProtocolException, IOException {
         String userNameAndPassword = userName + ":" + password;
         String encodedCredentials = Base64Encoder.encode(userNameAndPassword.getBytes());
-        HttpGet authRequest = new HttpGet(String.format(AUTHENTICATION_LOGIN_URL,webProtocol, pcServer));
+        HttpGet authRequest = new HttpGet(String.format(AUTHENTICATION_LOGIN_URL + tenantSuffix, webProtocol, pcServer));
         authRequest.addHeader("Authorization", String.format("Basic %s", encodedCredentials));
         executeRequest(authRequest);
         return true;
@@ -344,4 +345,11 @@ public class PcRestProxy {
         return baseURL;
     }
 
+    public String GetPcServer () {
+        return pcServer;
+    }
+
+    public String GetTenant() {
+        return  tenantSuffix;
+    }
 }
