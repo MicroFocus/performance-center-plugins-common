@@ -16,7 +16,7 @@
 package com.microfocus.adm.performancecenter.plugins.common.rest;
 
 
-import com.microfocus.adm.performancecenter.plugins.common.pcEntities.*;
+import com.microfocus.adm.performancecenter.plugins.common.pcentities.*;
 import com.microfocus.adm.performancecenter.plugins.common.utils.Base64Encoder;
 import com.microfocus.adm.performancecenter.plugins.common.utils.Helper;
 import org.apache.commons.codec.CharEncoding;
