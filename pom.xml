@@ -6,7 +6,7 @@
 
     <groupId>com.microfocus.adm.performancecenter</groupId>
     <artifactId>plugins-common</artifactId>
-    <version>1.0.3</version>
+    <version>1.0.2-TENANT</version>
     <packaging>jar</packaging>
 
     <name>Performance Center plugins common</name>
