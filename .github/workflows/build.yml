@@ -1,0 +1,71 @@
+name: Build And Audit
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+
+jobs:
+  maven-build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 8
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "8"
+          cache: maven
+
+      - name: Build with Maven (unit tests only)
+        run: mvn -B -ntp clean package -DskipITs=true -Dgpg.skip=true | tee build.log
+
+      - name: Generate dependency tree logs
+        run: |
+          mvn -B -ntp dependency:tree -DoutputFile=deps-full.txt
+          mvn -B -ntp dependency:tree -Dincludes=com.fasterxml.jackson.dataformat:jackson-dataformat-yaml,com.fasterxml.jackson.core:jackson-databind,org.apache.commons:commons-lang3 -DoutputFile=deps-focus.txt
+
+      - name: Collect artifacts and logs
+        run: |
+          mkdir -p ci-artifacts
+          cp build.log ci-artifacts/build.log
+          cp deps-full.txt ci-artifacts/deps-full.txt
+          cp deps-focus.txt ci-artifacts/deps-focus.txt
+          if [ -d target ]; then
+            cp -r target/surefire-reports ci-artifacts/ 2>/dev/null || true
+            cp -r target/failsafe-reports ci-artifacts/ 2>/dev/null || true
+            cp target/*.jar ci-artifacts/ 2>/dev/null || true
+          fi
+
+      - name: Upload CI artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: maven-build-artifacts
+          path: ci-artifacts
+          if-no-files-found: warn
+
+  docker-build:
+    runs-on: ubuntu-latest
+    needs: maven-build
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build Docker image
+        run: docker build -t plugins-common-build:latest .
+
+      - name: Run Docker build command and capture logs
+        run: |
+          docker run --rm plugins-common-build:latest | tee docker-build.log
+
+      - name: Upload Docker logs
+        uses: actions/upload-artifact@v4
+        with:
+          name: docker-build-logs
+          path: docker-build.log
+          if-no-files-found: error
+

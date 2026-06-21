@@ -21,14 +21,14 @@ import java.io.PrintStream;
 
 public interface PcRestProxyBase {
 
-    public static final String SERVER_AND_PORT = "jenkins.server:8082";
-    public static final String LRE_SERVER_NAME_WITH_TENANT = "http://mylreserver/LRE/?tenant=fa128c06-5436-413d-9cfa-9f04bb738df3";
-    public static final String ALM_USER_NAME = "sa";
-    public static final String ALM_PASSWORD = "saqa";
-    public static final String LRE_ID_KEY = "I_KEY_64e99e22-4fa7-436b-a629-5387a67aa66d";
-    public static final String LRE_SECRET_KEY = "S_KEY_80f55a6f-01aa-4e2c-9262-af634b8aa2bc";
-    public static final String ALM_DOMAIN = "DANIEL";
-    public static final String ALM_PROJECT = "proj1";
+    public static final String SERVER_AND_PORT = IntegrationTestConfig.get("pc.server.and.port", "jenkins.server:8082");
+    public static final String LRE_SERVER_NAME_WITH_TENANT = IntegrationTestConfig.get("pc.lre.server", "");
+    public static final String ALM_USER_NAME = IntegrationTestConfig.get("pc.alm.user", "");
+    public static final String ALM_PASSWORD = IntegrationTestConfig.get("pc.alm.password", "");
+    public static final String LRE_ID_KEY = IntegrationTestConfig.get("pc.lre.idKey", "");
+    public static final String LRE_SECRET_KEY = IntegrationTestConfig.get("pc.lre.secretKey", "");
+    public static final String ALM_DOMAIN = IntegrationTestConfig.get("pc.alm.domain", "");
+    public static final String ALM_PROJECT = IntegrationTestConfig.get("pc.alm.project", "");
     public static final String TEST_ID = "175";
     public static final int TEST_INSTANCE_ID = 8;
     public static final String TIMESLOT_DURATION_HOURS = "0";
@@ -41,7 +41,7 @@ public interface PcRestProxyBase {
     public static final String RUN_ID_WAIT = "8";
     public static final String REPORT_ID = "1058";
     public static final String STOP_MODE = "stop";
-    public static final String WEB_PROTOCOL = "http";
+    public static final String WEB_PROTOCOL = IntegrationTestConfig.get("pc.web.protocol", "http");
     public static final String WEB_PROTOCOL_62 = "http";
     public static final Boolean IS_HTTPS = false;
     public static final String TESTINSTANCEID = "MANUAL";
@@ -50,11 +50,13 @@ public interface PcRestProxyBase {
     public static final String RETRYDELAY = "5";
     public static final String RETRYOCCURRENCES = "3";
     public static final String pcReportArchiveName = "Reports.zip";
-    public static final String testFolderPath = "Subject\\ts\\scripts3";
+    public static final String testFolderPath = IntegrationTestConfig.get("pc.test.folderPath", "Subject\\ts\\scripts3");
     public static final boolean Overwrite = true;
     public static final boolean RuntimeOnly = true;
     public static final boolean KeepCheckedOut = false;
-    public static final String scriptPath = "C:\\temp\\kilimanjaro.zip";
+    public static final String scriptPath = IntegrationTestConfig.get("pc.test.scriptPath", "src/test/resources/microfocus/adm/performancecenter/plugins/common/rest/kilimanjaro.zip");
+    public static final String kilimanjaroScriptPath = IntegrationTestConfig.get("pc.test.kilimanjaro.scriptPath", "src/test/resources/microfocus/adm/performancecenter/plugins/common/rest/kilimanjaro.zip");
+    public static final String kilimanjaroFolderPath = IntegrationTestConfig.get("pc.test.kilimanjaro.folderPath", "Subject\\scripts");
 
 
     public static final String runResponseEntity = "<Run xmlns=\"http://www.hp.com/PC/REST/API\">" +

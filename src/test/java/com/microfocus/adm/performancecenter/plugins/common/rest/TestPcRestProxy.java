@@ -23,9 +23,10 @@ import com.microfocus.adm.performancecenter.plugins.common.pcentities.pcsubentit
 import com.microfocus.adm.performancecenter.plugins.common.pcentities.simplifiedentities.simplifiedtest.content.SimplifiedContent;
 import com.microfocus.adm.performancecenter.plugins.common.utils.Helper;
 import com.microfocus.adm.performancecenter.plugins.common.utils.ScriptCache;
-import org.apache.commons.lang.builder.ReflectionToStringBuilder;
+import org.apache.commons.lang3.builder.ReflectionToStringBuilder;
 
 import org.junit.Assert;
+import org.junit.Assume;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -35,7 +36,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static com.microfocus.adm.performancecenter.plugins.common.pcentities.pcsubentities.test.content.common.Common.stringToInteger;
-import static org.apache.commons.lang.builder.ToStringStyle.MULTI_LINE_STYLE;
+import static org.apache.commons.lang3.builder.ToStringStyle.MULTI_LINE_STYLE;
 
 public class TestPcRestProxy {
 
@@ -83,6 +84,10 @@ public class TestPcRestProxy {
     //@org.junit.BeforeClass
     public void setUp() throws PcException, Exception {
         System.out.println("setUp: starts");
+        Assume.assumeTrue("Skipping integration test: integration-tests.properties is missing.",
+                IntegrationTestConfig.hasPropertiesFile());
+        Assume.assumeTrue("Skipping integration test: missing required LRE connection keys in integration-tests.properties.",
+                IntegrationTestConfig.isConfigured());
         try {
             pcRestProxy = new PcRestProxy(PcRestProxyBase.WEB_PROTOCOL, PcRestProxyBase.LRE_SERVER_NAME_WITH_TENANT, useToken, PcRestProxyBase.ALM_DOMAIN, PcRestProxyBase.ALM_PROJECT, "", "", "");
             System.out.println("setUp: setUp done.");

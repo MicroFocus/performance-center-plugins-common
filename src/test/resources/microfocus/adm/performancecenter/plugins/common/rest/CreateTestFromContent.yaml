@@ -3,7 +3,7 @@ controller: "danieldb.aws.swinfra.net"
 group:
   - #group_name: "JavaVuser_LR_Information_pacing_immediately_thinktime_ignore"
     vusers: 5
-    script_id: 216
+    script_id: 200
     command_line: "echo hello from JavaVuser_LR_Information_pacing_immediately_thinktime_ignore > c:\\hello_from_JavaVuser_LR_Information_pacing_immediately_thinktime_ignore.txt"
     lg_name:
       - "LG1"

@@ -65,7 +65,7 @@ import java.util.stream.Collectors;
 
 import static org.apache.hc.core5.http.HttpStatus.*;
 
-public class PcRestProxy {
+public class PcRestProxy implements PcRestProxyClient {
 
     public static final String PC_API_XMLNS = "http://www.hp.com/PC/REST/API";
     protected static final String BASE_PC_API_URL = "%s://%s/LoadTest/rest";

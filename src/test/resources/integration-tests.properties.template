@@ -1,0 +1,17 @@
+# Copy this file to integration-tests.properties and fill real values for local IT runs.
+# When placeholder values are left as-is, integration tests are skipped.
+
+pc.web.protocol=http
+pc.lre.server=http://your-lre-server.example.com/homepage/?tenant=your-tenant-id
+pc.alm.domain=YOUR_DOMAIN
+pc.alm.project=YOUR_PROJECT
+pc.alm.user=YOUR_USERNAME
+pc.alm.password=YOUR_PASSWORD
+pc.lre.idKey=YOUR_CLIENT_ID
+pc.lre.secretKey=YOUR_CLIENT_SECRET
+
+pc.test.folderPath=Subject\\your-folder
+pc.test.scriptPath=src/test/resources/microfocus/adm/performancecenter/plugins/common/rest/kilimanjaro.zip
+pc.test.kilimanjaro.scriptPath=src/test/resources/microfocus/adm/performancecenter/plugins/common/rest/kilimanjaro.zip
+pc.test.kilimanjaro.folderPath=Subject\\scripts
+
