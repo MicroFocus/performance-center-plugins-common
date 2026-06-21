@@ -11,17 +11,20 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
-      - name: Set up JDK 8
-        uses: actions/setup-java@v4
+      - name: Set up JDK 21
+        uses: actions/setup-java@v5
         with:
           distribution: temurin
-          java-version: "8"
+          java-version: "21"
           cache: maven
 
       - name: Build with Maven (unit tests only)
-        run: mvn -B -ntp clean package -DskipITs=true -Dgpg.skip=true | tee build.log
+        shell: bash
+        run: |
+          set -euo pipefail
+          mvn -B -ntp clean package -DskipITs=true -Dgpg.skip=true | tee build.log
 
       - name: Generate dependency tree logs
         run: |
@@ -53,13 +56,15 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Build Docker image
         run: docker build -t plugins-common-build:latest .
 
       - name: Run Docker build command and capture logs
+        shell: bash
         run: |
+          set -euo pipefail
           docker run --rm plugins-common-build:latest | tee docker-build.log
 
       - name: Upload Docker logs
