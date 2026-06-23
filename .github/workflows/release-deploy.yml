@@ -4,7 +4,6 @@ on:
   push:
     branches:
       - master
-      - main
     paths:
       - release/deploy.txt
   workflow_dispatch:
@@ -51,7 +50,7 @@ jobs:
 
   deploy:
     needs: prepare
-    if: needs.prepare.outputs.run_release == 'true'
+    if: needs.prepare.outputs.run_release == 'true' && github.ref == 'refs/heads/master'
     runs-on: ubuntu-latest
     env:
       CENTRAL_TOKEN_USERNAME: ${{ secrets.CENTRAL_TOKEN_USERNAME }}
@@ -71,13 +70,12 @@ jobs:
           server-username: CENTRAL_TOKEN_USERNAME
           server-password: CENTRAL_TOKEN_PASSWORD
 
-      - name: Import GPG key manually
+      - name: Import GPG key
         shell: bash
         env:
           GPG_PRIVATE_KEY_B64: ${{ secrets.MAVEN_GPG_PRIVATE_KEY_BASE64 }}
         run: |
           set -euo pipefail
-          echo "Importing GPG key..."
 
           KEYFILE=$(mktemp)
           trap "rm -f $KEYFILE" EXIT
@@ -87,20 +85,7 @@ jobs:
           # GitHub Secrets UI. Strip all whitespace, then decode to the real key.
           printf '%s' "$GPG_PRIVATE_KEY_B64" | tr -d '[:space:]' | base64 -d > "$KEYFILE"
 
-          echo "=== Diagnostics ==="
-          echo "Key file size: $(wc -c < "$KEYFILE") bytes"
-          echo "Line count: $(wc -l < "$KEYFILE")"
-          echo "Has BEGIN marker: $(grep -c 'BEGIN PGP PRIVATE KEY' "$KEYFILE" || true)"
-          echo "Has END marker: $(grep -c 'END PGP PRIVATE KEY' "$KEYFILE" || true)"
-
-          echo "=== Importing ==="
-          gpg --batch \
-              --import \
-              --import-options import-show \
-              "$KEYFILE" || { echo "Import failed"; exit 1; }
-
-          echo "✓ GPG key imported successfully"
-          gpg --list-secret-keys --keyid-format=long
+          gpg --batch --quiet --import "$KEYFILE"
 
       - name: Validate version
         if: needs.prepare.outputs.requested_version != ''
