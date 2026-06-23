@@ -64,15 +64,15 @@ jobs:
       - name: Manual GPG key import
         shell: bash
         env:
-          GPG_KEY: ${{ secrets.MAVEN_GPG_PRIVATE_KEY }}
+          GPG_KEY_BASE64: ${{ secrets.MAVEN_GPG_PRIVATE_KEY }}
         run: |
           set +e
           KEYFILE=$(mktemp)
           chmod 600 "$KEYFILE"
           trap "rm -f $KEYFILE" EXIT
           
-          # Write secret to file (GitHub masks secrets in logs)
-          printf '%s' "$GPG_KEY" > "$KEYFILE"
+          # Decode base64 to file
+          echo "$GPG_KEY_BASE64" | base64 -d > "$KEYFILE"
           
           echo "Key file size: $(wc -c < "$KEYFILE")"
           
