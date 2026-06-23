@@ -63,29 +63,26 @@ jobs:
 
       - name: Manual GPG key import
         shell: bash
+        env:
+          GPG_KEY: ${{ secrets.MAVEN_GPG_PRIVATE_KEY }}
         run: |
           set +e
           KEYFILE=$(mktemp)
           chmod 600 "$KEYFILE"
-          trap "shred -vfz -n 3 $KEYFILE 2>/dev/null || rm -f $KEYFILE" EXIT
+          trap "rm -f $KEYFILE" EXIT
           
-          # Write secret directly to file (no echo/pipe)
-          cat > "$KEYFILE" << 'KEYEOF'
-${{ secrets.MAVEN_GPG_PRIVATE_KEY }}
-KEYEOF
+          # Write secret to file (GitHub masks secrets in logs)
+          printf '%s' "$GPG_KEY" > "$KEYFILE"
           
           echo "Key file size: $(wc -c < "$KEYFILE")"
-          echo "First line: $(head -1 "$KEYFILE")"
-          echo "Last line: $(tail -1 "$KEYFILE")"
           
-          # Try to import
+          # Import the key
           gpg --batch --import --passphrase "${{ env.MAVEN_GPG_PASSPHRASE }}" "$KEYFILE" 2>&1
           IMPORT_STATUS=$?
           echo "Import exit code: $IMPORT_STATUS"
           
           if [ $IMPORT_STATUS -eq 0 ]; then
             echo "✓ Key imported successfully"
-            gpg --list-secret-keys
           else
             echo "✗ Key import failed"
             exit 1
