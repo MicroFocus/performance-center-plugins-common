@@ -66,7 +66,8 @@ jobs:
         run: |
           set -euo pipefail
           # Decode to a secure temp file (readable only by current user)
-          KEYFILE=$(mktemp --mode 600)
+          KEYFILE=$(mktemp)
+          chmod 600 "$KEYFILE"
           trap "rm -f $KEYFILE" EXIT
           # Use here-string to avoid echoing the secret
           base64 -d <<< "${{ secrets.MAVEN_GPG_PRIVATE_KEY }}" > "$KEYFILE"
