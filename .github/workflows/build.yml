@@ -3,6 +3,8 @@ name: Build And Audit
 on:
   push:
     branches: ["**"]
+    paths-ignore:
+      - release/deploy.txt
   pull_request:
 
 jobs:
