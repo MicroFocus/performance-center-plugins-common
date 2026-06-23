@@ -61,34 +61,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v5
 
-      - name: Manual GPG key import
-        shell: bash
-        env:
-          GPG_KEY_BASE64: ${{ secrets.MAVEN_GPG_PRIVATE_KEY }}
-        run: |
-          set +e
-          KEYFILE=$(mktemp)
-          chmod 600 "$KEYFILE"
-          trap "rm -f $KEYFILE" EXIT
-          
-          # Decode base64 to file
-          echo "$GPG_KEY_BASE64" | base64 -d > "$KEYFILE"
-          
-          echo "Key file size: $(wc -c < "$KEYFILE")"
-          
-          # Import the key
-          gpg --batch --import --passphrase "${{ env.MAVEN_GPG_PASSPHRASE }}" "$KEYFILE" 2>&1
-          IMPORT_STATUS=$?
-          echo "Import exit code: $IMPORT_STATUS"
-          
-          if [ $IMPORT_STATUS -eq 0 ]; then
-            echo "✓ Key imported successfully"
-          else
-            echo "✗ Key import failed"
-            exit 1
-          fi
-
-      - name: Set up JDK + Maven settings (without GPG - already imported)
+      - name: Set up JDK + Maven settings + GPG
         uses: actions/setup-java@v5
         with:
           distribution: temurin
@@ -97,8 +70,10 @@ jobs:
           server-id: central
           server-username: CENTRAL_TOKEN_USERNAME
           server-password: CENTRAL_TOKEN_PASSWORD
+          gpg-private-key: ${{ secrets.MAVEN_GPG_PRIVATE_KEY_ASCII }}
+          gpg-passphrase: MAVEN_GPG_PASSPHRASE
 
-      - name: Validate requested version
+      - name: Validate version
         if: needs.prepare.outputs.requested_version != ''
         shell: bash
         run: |
