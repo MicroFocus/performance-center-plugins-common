@@ -61,7 +61,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v5
 
-      - name: Set up JDK + Maven settings + GPG
+      - name: Set up JDK + Maven settings
         uses: actions/setup-java@v5
         with:
           distribution: temurin
@@ -70,8 +70,31 @@ jobs:
           server-id: central
           server-username: CENTRAL_TOKEN_USERNAME
           server-password: CENTRAL_TOKEN_PASSWORD
-          gpg-private-key: ${{ secrets.MAVEN_GPG_PRIVATE_KEY_ASCII }}
-          gpg-passphrase: MAVEN_GPG_PASSPHRASE
+
+      - name: Import GPG key manually
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "Importing GPG key..."
+          
+          # Create a temp file for the key
+          KEYFILE=$(mktemp)
+          trap "rm -f $KEYFILE" EXIT
+          chmod 600 "$KEYFILE"
+          
+          # Write the ASCII-armored key directly
+          cat > "$KEYFILE" << 'EOFKEY'
+${{ secrets.MAVEN_GPG_PRIVATE_KEY_ASCII }}
+EOFKEY
+          
+          # Import with explicit options
+          gpg --batch \
+              --import \
+              --import-options=import-show \
+              "$KEYFILE" || { echo "Import failed"; exit 1; }
+          
+          echo "✓ GPG key imported successfully"
+          gpg --list-secret-keys --keyid-format=long
 
       - name: Validate version
         if: needs.prepare.outputs.requested_version != ''
@@ -86,6 +109,10 @@ jobs:
 
       - name: Build and deploy to Sonatype Central
         shell: bash
+        env:
+          GPG_PASSPHRASE: ${{ env.MAVEN_GPG_PASSPHRASE }}
         run: |
           set -euo pipefail
-          mvn -B -ntp clean deploy -DskipITs=true -Dgpg.passphrase="${MAVEN_GPG_PASSPHRASE}"
+          mvn -B -ntp clean deploy \
+            -DskipITs=true \
+            -Dgpg.passphrase="${GPG_PASSPHRASE}"
