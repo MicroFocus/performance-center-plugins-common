@@ -3,7 +3,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.microfocus.adm.performancecenter</groupId>
     <artifactId>plugins-common</artifactId>
-    <version>1.2.2</version>
+    <version>1.2.3</version>
     <packaging>jar</packaging>
     <name>OpenText Enterprise Performance Engineering plugins common</name>
     <description>The plugin is a common code for plugins integrated with OpenText Enterprise Performance Engineering via public REST API.</description>
@@ -170,6 +170,7 @@
                         <include>**/TestUploadScriptIntegration.java</include>
                         <include>**/TestRunLifecycleIntegration.java</include>
                         <include>**/TestRunStartFailureIntegration.java</include>
+                        <include>**/TestTestSetAndTrendReportIntegration.java</include>
                     </includes>
                 </configuration>
                 <executions>

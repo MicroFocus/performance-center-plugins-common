@@ -1,0 +1,6 @@
+# Release trigger file
+# 1) Set enabled=true
+# 2) Set version to the pom.xml release version you want to publish
+# 3) Commit and push this file to main/master
+enabled=false
+version=1.2.2

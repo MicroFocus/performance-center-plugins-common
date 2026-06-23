@@ -59,6 +59,9 @@ public class PcRestProxyRequestUnitTest {
         proxy.registerResponse("POST", "/Runs", "<Run><ID>13</ID><TestID>1</TestID><TestInstanceID>2</TestInstanceID><Duration>10</Duration><RunState>Running</RunState></Run>");
         proxy.registerResponse("POST", "/testinstances", "<TestInstance><TestInstanceID>55</TestInstanceID></TestInstance>");
         proxy.registerResponse("GET", "/testsets", "<TestSets><TestSet><ID>1</ID><Name>set1</Name></TestSet></TestSets>");
+        proxy.registerResponse("GET", "/testsetfolders", "<TestSetFolders><TestSetFolder><TestSetFolderId>10</TestSetFolderId><Parent>0</Parent><TestSetFolderName>Root</TestSetFolderName></TestSetFolder></TestSetFolders>");
+        proxy.registerResponse("POST", "/testsetfolders", "<TestSetFolder><TestSetFolderId>11</TestSetFolderId><Parent>10</Parent><TestSetFolderName>NewFolder</TestSetFolderName></TestSetFolder>");
+        proxy.registerResponse("POST", "/testsets", "<TestSet><TestSetName>NewSet</TestSetName><TestSetComment>demo</TestSetComment><TestSetParentId>11</TestSetParentId><TestSetID>21</TestSetID></TestSet>");
         proxy.registerResponse("GET", "/testinstances?", "<TestInstances><TestInstance><ID>12</ID></TestInstance></TestInstances>");
         proxy.registerResponse("POST", "/Runs/13/stop", "<ok/>");
         proxy.registerResponse("GET", "/Runs/13", "<Run><ID>13</ID><TestID>1</TestID><TestInstanceID>2</TestInstanceID><Duration>10</Duration><RunState>Running</RunState></Run>");
@@ -66,6 +69,7 @@ public class PcRestProxyRequestUnitTest {
         proxy.registerResponse("GET", "/Runs/13/Results", "<RunResults><RunResult><ID>1</ID><Name>r1</Name><Type>Output Log</Type><RunID>13</RunID></RunResult></RunResults>");
         proxy.registerResponse("GET", "/TrendReports/9/13", "<Root></Root>");
         proxy.registerResponse("POST", "/TrendReports/9", "<ok/>");
+        proxy.registerResponse("POST", "/TrendReports", "<TrendReport><ID>41</ID></TrendReport>");
         proxy.registerResponse("GET", "/TrendReports/9", "<TrendReport><TrendedRun><RunID>13</RunID><State>Finished</State></TrendedRun></TrendReport>");
         proxy.registerResponse("GET", "/Runs/13/EventLog", "<EventLog><Record><Message>m</Message></Record></EventLog>");
         proxy.registerResponse("GET", "/timeslots?", "<Timeslots><Timeslot><ID>1</ID><OpenStatus>open</OpenStatus></Timeslot><Timeslot><ID>2</ID><OpenStatus>closed</OpenStatus></Timeslot></Timeslots>");
@@ -76,6 +80,10 @@ public class PcRestProxyRequestUnitTest {
         Assert.assertEquals(55, proxy.createTestInstance(1, 2));
         Assert.assertEquals(1, proxy.GetAllTestSets().getPcTestSetsList().size());
         Assert.assertEquals(1, proxy.getAllTestSets().getPcTestSetsList().size());
+        Assert.assertEquals(1, proxy.getTestSetFolders().getPcTestSetFolderList().size());
+        Assert.assertEquals(11, proxy.createTestSetFolder(10, "NewFolder").getTestSetFolderId());
+        Assert.assertEquals(21, proxy.createTestSet("NewSet", 11, "demo").getTestSetID());
+        Assert.assertEquals(41, proxy.addTrendReport("trend-1", "demo"));
         Assert.assertEquals(1, proxy.getTestInstancesByTestId(7).getTestInstancesList().size());
         Assert.assertTrue(proxy.stopRun(13, "stop"));
         Assert.assertEquals(13, proxy.getRunData(13).getID());
@@ -306,4 +314,3 @@ public class PcRestProxyRequestUnitTest {
         }
     }
 }
-

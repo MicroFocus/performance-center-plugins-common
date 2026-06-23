@@ -62,6 +62,22 @@ public interface PcRestProxyClient {
 
     boolean deleteScript(int scriptId) throws PcException, IOException;
 
+    PcTestSetFolders getTestSetFolders() throws IOException, PcException;
+
+    PcTestSetFolder createTestSetFolder(int parentId, String name) throws IOException, PcException;
+
+    PcTestSet createTestSet(String testSetName, int testSetParentId, String testSetComment) throws IOException, PcException;
+
+    default PcTestSet createTestSet(String testSetName, int testSetParentId) throws IOException, PcException {
+        return createTestSet(testSetName, testSetParentId, "");
+    }
+
+    int addTrendReport(String name, String description) throws IOException, PcException;
+
+    default int addTrendReport(String name) throws IOException, PcException {
+        return addTrendReport(name, "");
+    }
+
     PcTestPlanFolders getTestPlanFolders() throws IOException, PcException;
 
     boolean verifyTestPlanFolderExist(String path) throws IOException, PcException;
@@ -95,4 +111,3 @@ public interface PcRestProxyClient {
 
     String GetTenant();
 }
-

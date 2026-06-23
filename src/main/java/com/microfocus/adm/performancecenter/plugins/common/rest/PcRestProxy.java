@@ -85,6 +85,7 @@ public class PcRestProxy implements PcRestProxyClient {
     protected static final String CONTENT_TYPE_XML = "application/xml";
     protected static final String SCRIPTS_RESOURCE_NAME = "Scripts";
     protected static final String TESTPLAN_RESOURCE_NAME = "testplan";
+    protected static final String TEST_SET_FOLDERS_RESOURCE_NAME = "testsetfolders";
     protected static final String TIMESLOTS = "timeslots";
     protected static final List<Integer> validStatusCodes = Arrays.asList(SC_OK, SC_CREATED, SC_ACCEPTED, SC_NO_CONTENT);
     private final String baseURL;
@@ -551,6 +552,54 @@ public class PcRestProxy implements PcRestProxyClient {
         return true;
     }
 
+    public PcTestSetFolders getTestSetFolders() throws IOException, PcException {
+        HttpGet request = new HttpGet(String.format(baseURL + "/%s", TEST_SET_FOLDERS_RESOURCE_NAME));
+        String responseXml = executeRequest(request);
+        return PcTestSetFolders.xmlToObject(responseXml);
+    }
+
+    public PcTestSetFolder createTestSetFolder(int parentId, String name) throws IOException, PcException {
+        HttpPost request = new HttpPost(String.format(baseURL + "/%s", TEST_SET_FOLDERS_RESOURCE_NAME));
+        TestSetFolderCreateRequest createRequest = new TestSetFolderCreateRequest(name, parentId);
+        request.setEntity(new StringEntity(createRequest.objectToXML(), org.apache.http.entity.ContentType.APPLICATION_XML));
+        request.addHeader(RESTConstants.CONTENT_TYPE, CONTENT_TYPE_XML);
+
+        String responseXml = executeRequest(request);
+        return createRequest.getPcTestSetFolderFromResponse(responseXml);
+    }
+
+    public PcTestSet createTestSet(String testSetName, int testSetParentId) throws IOException, PcException {
+        return createTestSet(testSetName, testSetParentId, "");
+    }
+
+    public PcTestSet createTestSet(String testSetName, int testSetParentId, String testSetComment) throws IOException, PcException {
+        HttpPost request = new HttpPost(String.format(baseURL + "/%s", TEST_SETS_NAME));
+        TestSetCreateRequest createRequest = new TestSetCreateRequest(testSetName, testSetParentId, testSetComment);
+        request.setEntity(new StringEntity(createRequest.objectToXML(), org.apache.http.entity.ContentType.APPLICATION_XML));
+        request.addHeader(RESTConstants.CONTENT_TYPE, CONTENT_TYPE_XML);
+
+        String responseXml = executeRequest(request);
+        return createRequest.getPcTestSetFromResponse(responseXml);
+    }
+
+    public int addTrendReport(String name) throws IOException, PcException {
+        return addTrendReport(name, "");
+    }
+
+    public int addTrendReport(String name, String description) throws IOException, PcException {
+        HttpPost request = new HttpPost(String.format(baseURL + "/%s", TREND_REPORT_RESOURCE_NAME));
+        TrendReportCreateRequest createRequest = new TrendReportCreateRequest(name, description);
+        request.setEntity(new StringEntity(createRequest.objectToXML(), org.apache.http.entity.ContentType.APPLICATION_XML));
+        request.addHeader(HttpHeaders.CONTENT_TYPE, CONTENT_TYPE_XML);
+
+        String responseXml = executeRequest(request);
+        try {
+            return createRequest.getTrendReportIdFromResponse(responseXml);
+        } catch (SAXException | ParserConfigurationException e) {
+            throw new PcException("addTrendReport exception: " + e, e);
+        }
+    }
+
     public PcTestPlanFolders getTestPlanFolders() throws IOException, PcException {
         HttpGet getFolderTreeRequest = new HttpGet(String.format(baseURL + "/%s", TESTPLAN_RESOURCE_NAME));
         String testPlan = executeRequest(getFolderTreeRequest);
@@ -614,10 +663,13 @@ public class PcRestProxy implements PcRestProxyClient {
     }
 
     public Test createOrUpdateTestFromYamlContent(String testName, String testFolderPath, String testOrContent) throws IOException, PcException {
-        Test createdOrUpdatedTest = null;
-        ConvertContentStringToTest convertContentStringToTest = new ConvertContentStringToTest(this, testName, testFolderPath, testOrContent).invoke();
-        createdOrUpdatedTest = createOrUpdateTest(convertContentStringToTest.getTestName(), convertContentStringToTest.getTestFolderPathWithSubject(), convertContentStringToTest.getContent());
-        return createdOrUpdatedTest;
+        ConvertContentStringToTest.ConversionResult conversionResult =
+                new ConvertContentStringToTest(this).convert(testName, testFolderPath, testOrContent);
+        return createOrUpdateTest(
+                conversionResult.getTestName(),
+                conversionResult.getTestFolderPathWithSubject(),
+                conversionResult.getContent()
+        );
     }
 
     public Test createOrUpdateTest(String testName, String testFolderPath, String xml) throws IOException, PcException {

@@ -43,14 +43,48 @@ public class ConvertContentStringToTest {
     private String testName;
     private String testFolderPath;
     private String testFolderPathWithSubject;
-    private final String testOrContent;
+    private String testOrContent;
     private Content content;
 
-    public ConvertContentStringToTest(PcRestProxy pcRestProxy, String testName, String testFolderPath, String testOrContent) {
+    public ConvertContentStringToTest(PcRestProxy pcRestProxy) {
         this.pcRestProxy = pcRestProxy;
+    }
+
+    public ConvertContentStringToTest(PcRestProxy pcRestProxy, String testName, String testFolderPath, String testOrContent) {
+        this(pcRestProxy);
         this.testName = testName;
         this.testFolderPath = testFolderPath;
         this.testOrContent = testOrContent;
+    }
+
+    public static class ConversionResult {
+        private final String testName;
+        private final String testFolderPath;
+        private final String testFolderPathWithSubject;
+        private final Content content;
+
+        public ConversionResult(String testName, String testFolderPath, String testFolderPathWithSubject, Content content) {
+            this.testName = testName;
+            this.testFolderPath = testFolderPath;
+            this.testFolderPathWithSubject = testFolderPathWithSubject;
+            this.content = content;
+        }
+
+        public String getTestName() {
+            return testName;
+        }
+
+        public String getTestFolderPath() {
+            return testFolderPath;
+        }
+
+        public String getTestFolderPathWithSubject() {
+            return testFolderPathWithSubject;
+        }
+
+        public Content getContent() {
+            return content;
+        }
     }
 
     public String getTestName() {
@@ -69,12 +103,8 @@ public class ConvertContentStringToTest {
         return content;
     }
 
-    public ConvertContentStringToTest invoke() throws IOException, PcException {
+    public ConversionResult convert(String testName, String testFolderPath, String testOrContent) throws IOException, PcException {
         SimplifiedContentInputParser.ParseResult parseResult = new SimplifiedContentInputParser().parse(testName, testFolderPath, testOrContent);
-        testName = parseResult.getTestName();
-        testFolderPath = parseResult.getTestFolderPath();
-        testFolderPathWithSubject = parseResult.getTestFolderPathWithSubject();
-
         SimplifiedContent simplifiedContent = new SimplifiedGroupScriptResolver(pcRestProxy).resolve(parseResult.getSimplifiedContent());
 
         ContentPartsFactory contentPartsFactory = new ContentPartsFactory();
@@ -99,10 +129,25 @@ public class ConvertContentStringToTest {
         Diagnostics diagnostics = null;
         GlobalRTS globalRTS = null;
 
-        content = new Content(controller, workloadType, lgDistribution, monitorProfiles, groups, scheduler,
+        Content convertedContent = new Content(controller, workloadType, lgDistribution, monitorProfiles, groups, scheduler,
                 analysisTemplate, automaticTrending, monitorsOFW, sla, diagnostics, globalCommandLine,
                 globalRTS, elasticLoadGeneratorConfiguration, elasticControllerConfiguration);
 
+        return new ConversionResult(
+                parseResult.getTestName(),
+                parseResult.getTestFolderPath(),
+                parseResult.getTestFolderPathWithSubject(),
+                convertedContent
+        );
+    }
+
+    @Deprecated
+    public ConvertContentStringToTest invoke() throws IOException, PcException {
+        ConversionResult result = convert(testName, testFolderPath, testOrContent);
+        this.testName = result.getTestName();
+        this.testFolderPath = result.getTestFolderPath();
+        this.testFolderPathWithSubject = result.getTestFolderPathWithSubject();
+        this.content = result.getContent();
         return this;
     }
 }

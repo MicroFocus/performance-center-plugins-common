@@ -18,21 +18,34 @@ package com.microfocus.adm.performancecenter.plugins.common.pcentities;
 import com.microfocus.adm.performancecenter.plugins.common.rest.PcRestProxy;
 import com.microfocus.adm.performancecenter.plugins.common.utils.Helper;
 import com.thoughtworks.xstream.XStream;
-
-public class PcTestSet {
+public class TestSetCreateRequest {
     private String xmlns = PcRestProxy.PC_API_XMLNS;
     private String TestSetName;
     private String TestSetComment;
     private int TestSetParentId;
-    private int TestSetID;
 
-    public static PcTestSet xmlToObject(String xml) {
+    public TestSetCreateRequest() {
+    }
+
+    public TestSetCreateRequest(String testSetName, int testSetParentId, String testSetComment) {
+        this.TestSetName = testSetName;
+        this.TestSetParentId = testSetParentId;
+        this.TestSetComment = testSetComment;
+    }
+
+    public String objectToXML() {
         XStream xstream = new XStream();
         xstream = Helper.xstreamPermissions(xstream);
-        xstream.alias("TestSet", PcTestSet.class);
-        xstream.useAttributeFor(PcTestSet.class, "xmlns");
-        xstream.setClassLoader(PcTestSet.class.getClassLoader());
-        return (PcTestSet) xstream.fromXML(xml);
+        xstream.useAttributeFor(TestSetCreateRequest.class, "xmlns");
+        xstream.alias("TestSet", TestSetCreateRequest.class);
+        xstream.aliasField("TestSetName", TestSetCreateRequest.class, "TestSetName");
+        xstream.aliasField("TestSetComment", TestSetCreateRequest.class, "TestSetComment");
+        xstream.aliasField("TestSetParentId", TestSetCreateRequest.class, "TestSetParentId");
+        return xstream.toXML(this);
+    }
+
+    public PcTestSet getPcTestSetFromResponse(String xml) {
+        return PcTestSet.xmlToObject(xml);
     }
 
     public String getTestSetName() {
@@ -57,13 +70,5 @@ public class PcTestSet {
 
     public void setTestSetParentId(int testSetParentId) {
         TestSetParentId = testSetParentId;
-    }
-
-    public int getTestSetID() {
-        return TestSetID;
-    }
-
-    public void setTestSetID(int testSetID) {
-        TestSetID = testSetID;
     }
 }
