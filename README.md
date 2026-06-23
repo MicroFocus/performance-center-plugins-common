@@ -10,6 +10,31 @@ Shared Java library for plugins that integrate with Opentext enterprise Performa
 - Unit tests for parsing, conversion, and request behavior.
 - Integration tests for live-server workflows (upload, run lifecycle, start-failure scenarios).
 
+## Availability and distribution
+
+The library is published to Maven Central under the coordinates `com.microfocus.adm.performancecenter:plugins-common`.
+
+- **Sonatype Central (source of truth):** https://central.sonatype.com/artifact/com.microfocus.adm.performancecenter/plugins-common
+  - This is the authoritative listing and reflects the latest published versions.
+- **MVNRepository (mirror):** https://mvnrepository.com/artifact/com.microfocus.adm.performancecenter/plugins-common
+  - This is a third-party mirror that indexes Maven Central. It can lag behind and may not be in sync (for example, a recently published version such as `1.2.2` or `1.2.3` may not yet appear here). For the current state always refer to Sonatype Central.
+
+### Maven dependency
+
+```xml
+<dependency>
+    <groupId>com.microfocus.adm.performancecenter</groupId>
+    <artifactId>plugins-common</artifactId>
+    <version>1.2.3</version>
+</dependency>
+```
+
+### Gradle dependency
+
+```groovy
+implementation 'com.microfocus.adm.performancecenter:plugins-common:1.2.3'
+```
+
 ## Main client interface
 
 The main API contract is `PcRestProxyClient` in:
