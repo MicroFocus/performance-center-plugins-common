@@ -74,22 +74,26 @@ jobs:
       - name: Import GPG key manually
         shell: bash
         env:
-          GPG_PRIVATE_KEY: ${{ secrets.MAVEN_GPG_PRIVATE_KEY_ASCII }}
+          GPG_PRIVATE_KEY_B64: ${{ secrets.MAVEN_GPG_PRIVATE_KEY_BASE64 }}
         run: |
           set -euo pipefail
           echo "Importing GPG key..."
 
-          # Create a temp file for the key
           KEYFILE=$(mktemp)
           trap "rm -f $KEYFILE" EXIT
           chmod 600 "$KEYFILE"
 
-          # Write the ASCII-armored key from the env var (preserves newlines)
-          printf '%s\n' "$GPG_PRIVATE_KEY" > "$KEYFILE"
+          # The base64 secret may arrive with stray whitespace/newlines from the
+          # GitHub Secrets UI. Strip all whitespace, then decode to the real key.
+          printf '%s' "$GPG_PRIVATE_KEY_B64" | tr -d '[:space:]' | base64 -d > "$KEYFILE"
 
+          echo "=== Diagnostics ==="
           echo "Key file size: $(wc -c < "$KEYFILE") bytes"
+          echo "Line count: $(wc -l < "$KEYFILE")"
+          echo "Has BEGIN marker: $(grep -c 'BEGIN PGP PRIVATE KEY' "$KEYFILE" || true)"
+          echo "Has END marker: $(grep -c 'END PGP PRIVATE KEY' "$KEYFILE" || true)"
 
-          # Import with explicit options
+          echo "=== Importing ==="
           gpg --batch \
               --import \
               --import-options import-show \
