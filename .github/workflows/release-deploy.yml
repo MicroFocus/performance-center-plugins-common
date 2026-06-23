@@ -61,6 +61,31 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v5
 
+      - name: Debug GPG secret format
+        shell: bash
+        run: |
+          set +e  # Don't exit on error
+          echo "=== Secret key length ==="
+          echo "${{ secrets.MAVEN_GPG_PRIVATE_KEY }}" | wc -c
+          echo ""
+          echo "=== First 150 chars ==="
+          echo "${{ secrets.MAVEN_GPG_PRIVATE_KEY }}" | head -c 150
+          echo ""
+          echo "=== Last 150 chars ==="
+          echo "${{ secrets.MAVEN_GPG_PRIVATE_KEY }}" | tail -c 150
+          echo ""
+          echo "=== Check for PGP markers ==="
+          if echo "${{ secrets.MAVEN_GPG_PRIVATE_KEY }}" | grep -q "BEGIN PGP"; then
+            echo "✓ BEGIN marker found"
+          else
+            echo "✗ BEGIN marker NOT found"
+          fi
+          if echo "${{ secrets.MAVEN_GPG_PRIVATE_KEY }}" | grep -q "END PGP"; then
+            echo "✓ END marker found"
+          else
+            echo "✗ END marker NOT found"
+          fi
+
       - name: Set up JDK + Maven settings + GPG
         uses: actions/setup-java@v5
         with:
@@ -72,6 +97,14 @@ jobs:
           server-password: CENTRAL_TOKEN_PASSWORD
           gpg-private-key: ${{ secrets.MAVEN_GPG_PRIVATE_KEY }}
           gpg-passphrase: MAVEN_GPG_PASSPHRASE
+
+      - name: List GPG keys after import
+        shell: bash
+        run: |
+          echo "=== Secret keys ==="
+          gpg --list-secret-keys || echo "No keys found"
+          echo "=== All keys ==="
+          gpg --list-keys || echo "No keys found"
 
       - name: Validate requested version
         if: needs.prepare.outputs.requested_version != ''
