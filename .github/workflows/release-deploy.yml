@@ -73,26 +73,28 @@ jobs:
 
       - name: Import GPG key manually
         shell: bash
+        env:
+          GPG_PRIVATE_KEY: ${{ secrets.MAVEN_GPG_PRIVATE_KEY_ASCII }}
         run: |
           set -euo pipefail
           echo "Importing GPG key..."
-          
+
           # Create a temp file for the key
           KEYFILE=$(mktemp)
           trap "rm -f $KEYFILE" EXIT
           chmod 600 "$KEYFILE"
-          
-          # Write the ASCII-armored key directly
-          cat > "$KEYFILE" << 'EOFKEY'
-${{ secrets.MAVEN_GPG_PRIVATE_KEY_ASCII }}
-EOFKEY
-          
+
+          # Write the ASCII-armored key from the env var (preserves newlines)
+          printf '%s\n' "$GPG_PRIVATE_KEY" > "$KEYFILE"
+
+          echo "Key file size: $(wc -c < "$KEYFILE") bytes"
+
           # Import with explicit options
           gpg --batch \
               --import \
-              --import-options=import-show \
+              --import-options import-show \
               "$KEYFILE" || { echo "Import failed"; exit 1; }
-          
+
           echo "✓ GPG key imported successfully"
           gpg --list-secret-keys --keyid-format=long
 
