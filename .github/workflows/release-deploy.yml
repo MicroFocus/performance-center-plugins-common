@@ -1,0 +1,91 @@
+name: Release Deploy
+
+on:
+  push:
+    branches:
+      - master
+      - main
+    paths:
+      - release/deploy.txt
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    outputs:
+      run_release: ${{ steps.parse.outputs.run_release }}
+      requested_version: ${{ steps.parse.outputs.requested_version }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Parse release trigger file
+        id: parse
+        shell: bash
+        run: |
+          set -euo pipefail
+          FILE="release/deploy.txt"
+          if [[ ! -f "$FILE" ]]; then
+            echo "run_release=false" >> "$GITHUB_OUTPUT"
+            echo "requested_version=" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          get_value() {
+            local key="$1"
+            grep -E "^[[:space:]]*${key}[[:space:]]*=" "$FILE" | tail -n1 | cut -d'=' -f2- | tr -d '\r' | xargs || true
+          }
+
+          enabled="$(get_value enabled)"
+          requested_version="$(get_value version)"
+
+          if [[ "${enabled,,}" == "true" ]]; then
+            echo "run_release=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "run_release=false" >> "$GITHUB_OUTPUT"
+          fi
+          echo "requested_version=$requested_version" >> "$GITHUB_OUTPUT"
+
+  deploy:
+    needs: prepare
+    if: needs.prepare.outputs.run_release == 'true'
+    runs-on: ubuntu-latest
+    env:
+      CENTRAL_TOKEN_USERNAME: ${{ secrets.CENTRAL_TOKEN_USERNAME }}
+      CENTRAL_TOKEN_PASSWORD: ${{ secrets.CENTRAL_TOKEN_PASSWORD }}
+      MAVEN_GPG_PASSPHRASE: ${{ secrets.MAVEN_GPG_PASSPHRASE }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Set up JDK + Maven settings + GPG
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: maven
+          server-id: central
+          server-username: CENTRAL_TOKEN_USERNAME
+          server-password: CENTRAL_TOKEN_PASSWORD
+          gpg-private-key: ${{ secrets.MAVEN_GPG_PRIVATE_KEY }}
+          gpg-passphrase: MAVEN_GPG_PASSPHRASE
+
+      - name: Validate requested version
+        if: needs.prepare.outputs.requested_version != ''
+        shell: bash
+        run: |
+          set -euo pipefail
+          POM_VERSION="$(mvn -q -DforceStdout help:evaluate -Dexpression=project.version)"
+          if [[ "$POM_VERSION" != "${{ needs.prepare.outputs.requested_version }}" ]]; then
+            echo "Version mismatch: deploy.txt version=${{ needs.prepare.outputs.requested_version }}, pom.xml version=$POM_VERSION"
+            exit 1
+          fi
+
+      - name: Build and deploy to Sonatype Central
+        shell: bash
+        run: |
+          set -euo pipefail
+          mvn -B -ntp clean deploy -DskipITs=true -Dgpg.passphrase="${MAVEN_GPG_PASSPHRASE}"
