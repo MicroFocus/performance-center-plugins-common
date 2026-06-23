@@ -61,7 +61,19 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v5
 
-      - name: Set up JDK + Maven settings + GPG
+      - name: Decode and import GPG key
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Decode to a secure temp file (readable only by current user)
+          KEYFILE=$(mktemp --mode 600)
+          trap "rm -f $KEYFILE" EXIT
+          # Use here-string to avoid echoing the secret
+          base64 -d <<< "${{ secrets.MAVEN_GPG_PRIVATE_KEY }}" > "$KEYFILE"
+          # Import without exposing the key
+          gpg --batch --import --passphrase "${{ env.MAVEN_GPG_PASSPHRASE }}" "$KEYFILE" 2>&1 | grep -E "^gpg:|imported|secret" || true
+
+      - name: Set up JDK + Maven settings
         uses: actions/setup-java@v5
         with:
           distribution: temurin
@@ -70,8 +82,6 @@ jobs:
           server-id: central
           server-username: CENTRAL_TOKEN_USERNAME
           server-password: CENTRAL_TOKEN_PASSWORD
-          gpg-private-key: ${{ secrets.MAVEN_GPG_PRIVATE_KEY }}
-          gpg-passphrase: MAVEN_GPG_PASSPHRASE
 
       - name: Validate requested version
         if: needs.prepare.outputs.requested_version != ''
