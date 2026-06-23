@@ -61,32 +61,37 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v5
 
-      - name: Debug GPG secret format
+      - name: Manual GPG key import
         shell: bash
         run: |
-          set +e  # Don't exit on error
-          echo "=== Secret key length ==="
-          echo "${{ secrets.MAVEN_GPG_PRIVATE_KEY }}" | wc -c
-          echo ""
-          echo "=== First 150 chars ==="
-          echo "${{ secrets.MAVEN_GPG_PRIVATE_KEY }}" | head -c 150
-          echo ""
-          echo "=== Last 150 chars ==="
-          echo "${{ secrets.MAVEN_GPG_PRIVATE_KEY }}" | tail -c 150
-          echo ""
-          echo "=== Check for PGP markers ==="
-          if echo "${{ secrets.MAVEN_GPG_PRIVATE_KEY }}" | grep -q "BEGIN PGP"; then
-            echo "✓ BEGIN marker found"
+          set +e
+          KEYFILE=$(mktemp)
+          chmod 600 "$KEYFILE"
+          trap "shred -vfz -n 3 $KEYFILE 2>/dev/null || rm -f $KEYFILE" EXIT
+          
+          # Write secret directly to file (no echo/pipe)
+          cat > "$KEYFILE" << 'KEYEOF'
+${{ secrets.MAVEN_GPG_PRIVATE_KEY }}
+KEYEOF
+          
+          echo "Key file size: $(wc -c < "$KEYFILE")"
+          echo "First line: $(head -1 "$KEYFILE")"
+          echo "Last line: $(tail -1 "$KEYFILE")"
+          
+          # Try to import
+          gpg --batch --import --passphrase "${{ env.MAVEN_GPG_PASSPHRASE }}" "$KEYFILE" 2>&1
+          IMPORT_STATUS=$?
+          echo "Import exit code: $IMPORT_STATUS"
+          
+          if [ $IMPORT_STATUS -eq 0 ]; then
+            echo "✓ Key imported successfully"
+            gpg --list-secret-keys
           else
-            echo "✗ BEGIN marker NOT found"
-          fi
-          if echo "${{ secrets.MAVEN_GPG_PRIVATE_KEY }}" | grep -q "END PGP"; then
-            echo "✓ END marker found"
-          else
-            echo "✗ END marker NOT found"
+            echo "✗ Key import failed"
+            exit 1
           fi
 
-      - name: Set up JDK + Maven settings + GPG
+      - name: Set up JDK + Maven settings (without GPG - already imported)
         uses: actions/setup-java@v5
         with:
           distribution: temurin
@@ -95,16 +100,6 @@ jobs:
           server-id: central
           server-username: CENTRAL_TOKEN_USERNAME
           server-password: CENTRAL_TOKEN_PASSWORD
-          gpg-private-key: ${{ secrets.MAVEN_GPG_PRIVATE_KEY }}
-          gpg-passphrase: MAVEN_GPG_PASSPHRASE
-
-      - name: List GPG keys after import
-        shell: bash
-        run: |
-          echo "=== Secret keys ==="
-          gpg --list-secret-keys || echo "No keys found"
-          echo "=== All keys ==="
-          gpg --list-keys || echo "No keys found"
 
       - name: Validate requested version
         if: needs.prepare.outputs.requested_version != ''
