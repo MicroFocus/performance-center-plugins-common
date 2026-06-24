@@ -3,7 +3,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.microfocus.adm.performancecenter</groupId>
     <artifactId>plugins-common</artifactId>
-    <version>1.2.3</version>
+    <version>1.2.4</version>
     <packaging>jar</packaging>
     <name>OpenText Enterprise Performance Engineering plugins common</name>
     <description>The plugin is a common code for plugins integrated with OpenText Enterprise Performance Engineering via public REST API.</description>
@@ -29,7 +29,7 @@
                 <role>Plugin Owner and LoadRunner Enterprise RnD</role>
             </roles>
             <organization>LoadRunner Enterprise</organization>
-            <organizationUrl>https://www.opentext.com/products/loadrunner-enterprise</organizationUrl>
+            <organizationUrl>https://www.opentext.com/products/enterprise-performance-engineering</organizationUrl>
         </developer>
     </developers>
     <scm>
@@ -53,11 +53,6 @@
             <groupId>commons-codec</groupId>
             <artifactId>commons-codec</artifactId>
             <version>1.16.0</version>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.httpcomponents.client5</groupId>
-            <artifactId>httpclient5</artifactId>
-            <version>5.2.1</version>
         </dependency>
         <!-- https://mvnrepository.com/artifact/commons-logging/commons-logging -->
         <dependency>

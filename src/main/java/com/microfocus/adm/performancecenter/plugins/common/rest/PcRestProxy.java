@@ -35,6 +35,7 @@ import org.apache.http.auth.UsernamePasswordCredentials;
 import org.apache.http.client.ClientProtocolException;
 import org.apache.http.client.CookieStore;
 import org.apache.http.client.CredentialsProvider;
+import org.apache.http.client.config.CookieSpecs;
 import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.methods.*;
 import org.apache.http.client.protocol.HttpClientContext;
@@ -47,7 +48,6 @@ import org.apache.http.impl.client.BasicCredentialsProvider;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
-import org.apache.http.protocol.BasicHttpContext;
 import org.apache.http.protocol.HttpContext;
 import org.apache.http.util.EntityUtils;
 import org.xml.sax.SAXException;
@@ -63,7 +63,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import static org.apache.hc.core5.http.HttpStatus.*;
+import static org.apache.http.HttpStatus.*;
 
 public class PcRestProxy implements PcRestProxyClient {
 
@@ -95,7 +95,7 @@ public class PcRestProxy implements PcRestProxyClient {
     private String proxyHostName;
     private int proxyPort;
     private final CloseableHttpClient client;
-    private final HttpContext context;
+    private final CookieStore cookieStore;
     private final String tenantSuffix;
     private final boolean authenticateWithToken;
 
@@ -123,15 +123,18 @@ public class PcRestProxy implements PcRestProxyClient {
         HttpClientBuilder builder = HttpClientBuilder.create()
                 .setConnectionManager(cxMgr);
 
+        // Use the RFC 6265 cookie policy so that session-deletion cookies (e.g. the
+        // LWSSO logout cookie with "expires=Thu, 01 Jan 1970 00:00:00 GMT") are parsed
+        // without emitting "Invalid cookie header" warnings from the legacy date parser.
+        RequestConfig.Builder requestConfigBuilder = RequestConfig.custom()
+                .setCookieSpec(CookieSpecs.STANDARD);
+
         // Proxy setup
         if (proxyOutURL != null && !proxyOutURL.isEmpty()) {
             getProxyDataFromURL(proxyOutURL);
             HttpHost proxy = new HttpHost(this.proxyHostName, this.proxyPort, this.proxyScheme);
 
-            RequestConfig config = RequestConfig.custom()
-                    .setProxy(proxy)
-                    .build();
-            builder.setDefaultRequestConfig(config);
+            requestConfigBuilder.setProxy(proxy);
 
             if (proxyUser != null && !proxyUser.isEmpty()) {
                 CredentialsProvider credsProvider = new BasicCredentialsProvider();
@@ -142,11 +145,22 @@ public class PcRestProxy implements PcRestProxyClient {
                 builder.setDefaultCredentialsProvider(credsProvider);
             }
         }
+        builder.setDefaultRequestConfig(requestConfigBuilder.build());
         this.client = builder.build();
 
-        this.context = new BasicHttpContext();
-        CookieStore cookieStore = new BasicCookieStore();
-        this.context.setAttribute(HttpClientContext.COOKIE_STORE, cookieStore);
+        this.cookieStore = new BasicCookieStore();
+    }
+
+    /**
+     * Builds a fresh per-request {@link HttpContext} backed by the shared, thread-safe
+     * {@link CookieStore}. A new context is created for every request so that a single
+     * {@code PcRestProxy} instance can safely be used concurrently from multiple threads,
+     * while all threads continue to share the same authenticated session cookies.
+     */
+    private HttpContext createContext() {
+        HttpClientContext ctx = HttpClientContext.create();
+        ctx.setCookieStore(cookieStore);
+        return ctx;
     }
 
     public static Content getContentFromXmlOrYamlString(String xmlOrYamlTest) {
@@ -456,7 +470,7 @@ public class PcRestProxy implements PcRestProxyClient {
     }
 
     protected String executeRequest(HttpRequestBase request) throws PcException, IOException {
-        try (CloseableHttpResponse response = client.execute(request, context)) {
+        try (CloseableHttpResponse response = client.execute(request, createContext())) {
             if (!isOk(response)) {
                 String message;
                 try {
@@ -474,7 +488,7 @@ public class PcRestProxy implements PcRestProxyClient {
     }
 
     protected CloseableHttpResponse executeRawRequest(HttpRequestBase request) throws PcException, IOException {
-        CloseableHttpResponse response = client.execute(request, context);
+        CloseableHttpResponse response = client.execute(request, createContext());
         if (!isOk(response)) {
             try {
                 String content = EntityUtils.toString(response.getEntity(), StandardCharsets.UTF_8);

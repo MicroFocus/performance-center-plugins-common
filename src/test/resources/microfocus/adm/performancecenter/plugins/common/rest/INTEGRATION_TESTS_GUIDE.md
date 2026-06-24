@@ -28,6 +28,10 @@ This document is the single source of truth for integration test setup and execu
 - Upload script integration:
   - `pc.test.folderPath`
   - `pc.test.scriptPath`
+- Concurrent upload / thread-safety integration:
+  - `pc.test.folderPath`
+  - `pc.test.scriptPath`
+  - `pc.test.concurrentUploads` (optional, default `5`) — number of scripts uploaded in parallel
 - Run lifecycle integration:
   - `pc.test.kilimanjaro.scriptPath`
   - `pc.test.kilimanjaro.folderPath`
@@ -58,7 +62,27 @@ cd "C:\Git\plugin\performance-center-plugins-common"
 mvn -P internal-it "-Dit.test=TestRunLifecycleIntegration" verify
 mvn -P internal-it "-Dit.test=TestRunStartFailureIntegration" verify
 mvn -P internal-it "-Dit.test=TestUploadScriptIntegration" verify
+mvn -P internal-it "-Dit.test=TestConcurrentUploadScriptIntegration" verify
+mvn -P internal-it "-Dit.test=TestTestSetAndTrendReportIntegration" verify
 ```
+
+## Thread-safety and concurrent uploads
+
+`PcRestProxy` is safe to use from multiple threads: each request builds its own
+`HttpContext` while sharing a single thread-safe cookie store (authenticated session).
+This is covered by:
+
+- `PcRestProxyThreadSafetyUnitTest` (unit) — verifies fresh per-request context, shared
+  cookie store, and concurrent request correctness without a live server.
+- `TestConcurrentUploadScriptIntegration` (integration) — drives concurrent reads on a
+  single shared instance and parallel script uploads against a live LRE server.
+
+> **Server constraint:** The LRE REST API serializes script uploads **per session**. Two
+> simultaneous `POST /Scripts` uploads on the *same* authenticated session yield one
+> `201 Created` and one `400` (error code 1600), even though both are well-formed multipart
+> requests. To upload several scripts at once, give each worker thread its own session
+> (one `PcRestProxy` + one `authenticate(...)` per thread). Concurrent **read** operations
+> on a single shared instance are fully supported.
 
 ## Skip Behavior
 
@@ -77,4 +101,3 @@ This protects external/CI environments from trying to run live-server tests with
 - Release `1.2.2` dependency audit artifacts are available at:
   - `.github/java-upgrade/release-1.2.2/deps.txt`
   - `.github/java-upgrade/release-1.2.2/deps-full.txt`
-
